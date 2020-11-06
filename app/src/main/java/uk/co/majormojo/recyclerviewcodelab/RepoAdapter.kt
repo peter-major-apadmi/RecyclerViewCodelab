@@ -4,12 +4,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import uk.co.majormojo.recyclerviewcodelab.api.Repo
 
-class RepoAdapter : RecyclerView.Adapter<RepoAdapter.RepoViewHolder>() {
+typealias RepoClickHandler = (Repo) -> Unit
 
-    private var items = listOf<Repo>()
+class RepoAdapter(private val clickHandler: RepoClickHandler) : ListAdapter<Repo, RepoAdapter.RepoViewHolder>(diffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RepoViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_repo, parent, false)
@@ -17,31 +21,46 @@ class RepoAdapter : RecyclerView.Adapter<RepoAdapter.RepoViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: RepoViewHolder, position: Int) {
-        val repo = items[position]
+        val repo = getItem(position)
         holder.bind(repo)
     }
 
-    override fun getItemCount(): Int {
-        return items.size
-    }
-
-    fun submitItems(items: List<Repo>) {
-        this.items = items
-        notifyDataSetChanged()
-    }
-
-    class RepoViewHolder(view: View): RecyclerView.ViewHolder(view) {
-        private val largeLabel: TextView
-        private val smallLabel: TextView
+    inner class RepoViewHolder(view: View): RecyclerView.ViewHolder(view) {
 
         init {
-            largeLabel = view.findViewById(R.id.largeLabel)
-            smallLabel = view.findViewById(R.id.smallLabel)
+            itemView.setOnClickListener {
+                clickHandler(repo)
+            }
         }
 
+        private lateinit var repo: Repo
+        private val largeLabel: TextView = view.findViewById(R.id.largeLabel)
+        private val smallLabel: TextView = view.findViewById(R.id.smallLabel)
+
         fun bind(repo: Repo) {
+            this.repo = repo
             largeLabel.text = repo.name
             smallLabel.text = repo.description
         }
+    }
+
+    companion object {
+        private val diffCallback: DiffUtil.ItemCallback<Repo> =
+            object : DiffUtil.ItemCallback<Repo>() {
+
+                override fun areItemsTheSame(
+                    oldItem: Repo,
+                    newItem: Repo
+                ): Boolean {
+                    return newItem.id == oldItem.id
+                }
+
+                override fun areContentsTheSame(
+                    oldItem: Repo,
+                    newItem: Repo
+                ): Boolean {
+                    return newItem == oldItem
+                }
+            }
     }
 }
